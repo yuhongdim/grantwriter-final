@@ -1,5 +1,9 @@
 "use client";
-import { useState } from 'react';
+// 我们需要从 react 引入 useEffect 和 useState
+import { useState, useEffect } from 'react';
+
+// 在这里定义我们的免费使用上限
+const USAGE_LIMIT = 2;
 
 export default function Home() {
   const [topic, setTopic] = useState('');
@@ -10,11 +14,34 @@ export default function Home() {
   const [result, setResult] = useState('');
   const [error, setError] = useState('');
 
+  // 【新功能1】创建一个状态来追踪用户的使用次数
+  const [usageCount, setUsageCount] = useState(0);
+
+  // 【新功能2】当页面第一次加载时，从浏览器的小“笔记本”里读取记录
+  useEffect(() => {
+    // 尝试读取名为 'proposalUsageCount' 的记录，如果找不到，就默认为 0
+    const storedCount = parseInt(localStorage.getItem('proposalUsageCount') || '0');
+    setUsageCount(storedCount);
+  }, []); // 空数组 [] 意味着这个效果只在页面加载时运行一次
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // 【新功能3】在执行任何操作之前，先检查使用次数
+    if (usageCount >= USAGE_LIMIT) {
+      // 如果次数已经用完，就弹出一个提示，然后停止所有后续操作
+      alert("您已用完 " + USAGE_LIMIT + " 次免费试用机会！未来的付费版将解锁无限次使用和更多高级功能。");
+      return; 
+    }
+
     setIsLoading(true);
     setResult('');
     setError('');
+
+    // 【新功能4】一旦用户点击生成，立刻将使用次数 +1 并记录下来
+    const newCount = usageCount + 1;
+    localStorage.setItem('proposalUsageCount', newCount.toString());
+    setUsageCount(newCount); // 更新页面上的次数记录
 
     const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
@@ -26,6 +53,10 @@ export default function Home() {
       });
 
       if (!response.ok) {
+        // 如果生成失败，我们不应该惩罚用户，所以把次数减回去
+        const rollBackCount = usageCount; // 减回到点击前的状态
+        localStorage.setItem('proposalUsageCount', rollBackCount.toString());
+        setUsageCount(rollBackCount);
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
@@ -39,7 +70,10 @@ export default function Home() {
     }
   };
 
-  // 我们将直接使用内联样式，彻底告别所有CSS配置问题
+  // 我们可以在页面底部显示剩余次数，给用户明确的提示
+  const remainingTries = USAGE_LIMIT - usageCount > 0 ? USAGE_LIMIT - usageCount : 0;
+
+  // ... (后面的 return 部分和之前完全一样，只是增加了剩余次数的显示)
   const styles = {
     container: { display: 'flex', minHeight: '100vh', fontFamily: 'sans-serif', backgroundColor: '#f3f4f6' },
     leftPanel: { width: '50%', padding: '2rem', backgroundColor: 'white', borderRight: '1px solid #e5e7eb' },
@@ -49,9 +83,10 @@ export default function Home() {
     label: { display: 'block', color: '#374151', fontWeight: 'bold', marginBottom: '0.5rem' },
     input: { width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #D1D5DB', borderRadius: '0.375rem', marginBottom: '1rem' },
     textarea: { width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #D1D5DB', borderRadius: '0.375rem', marginBottom: '1rem' },
-    button: { width: '100%', backgroundColor: '#2563EB', color: 'white', fontWeight: 'bold', padding: '0.75rem 1rem', borderRadius: '0.375rem' },
-    buttonDisabled: { backgroundColor: '#9CA3AF' },
-    resultBox: { backgroundColor: 'white', padding: '1.5rem', borderRadius: '0.5rem', minHeight: '60vh', whiteSpace: 'pre-wrap', color: '#374151', border: '1px solid #e5e7eb' }
+    button: { width: '100%', backgroundColor: '#2563EB', color: 'white', fontWeight: 'bold', padding: '0.75rem 1rem', borderRadius: '0.375rem', cursor: 'pointer' },
+    buttonDisabled: { backgroundColor: '#9CA3AF', cursor: 'not-allowed' },
+    resultBox: { backgroundColor: 'white', padding: '1.5rem', borderRadius: '0.5rem', minHeight: '60vh', whiteSpace: 'pre-wrap', color: '#374151', border: '1px solid #e5e7eb' },
+    footerText: { marginTop: '1.5rem', textAlign: 'center', color: '#6B7280' }
   };
 
   return (
@@ -76,10 +111,12 @@ export default function Home() {
             <label style={styles.label} htmlFor="aim2">Specific Aim 2</label>
             <input style={styles.input} id="aim2" type="text" value={aim2} onChange={(e) => setAim2(e.target.value)} placeholder="e.g., To test the therapeutic potential of inhibiting XYZ" required />
           </div>
-          <button style={{...styles.button, ...(isLoading ? styles.buttonDisabled : {})}} type="submit" disabled={isLoading}>
+          <button style={{...styles.button, ...(isLoading || remainingTries <= 0 ? styles.buttonDisabled : {})}} type="submit" disabled={isLoading || remainingTries <= 0}>
             {isLoading ? 'Generating...' : '✨ Generate Proposal'}
           </button>
         </form>
+        {/* 【新功能5】在底部显示剩余次数 */}
+        <p style={styles.footerText}>You have {remainingTries} free tries remaining.</p>
       </div>
       <div style={styles.rightPanel}>
         <h3 style={{...styles.h1, fontSize: '1.5rem', marginBottom: '1rem'}}>Generated Proposal Draft</h3>
