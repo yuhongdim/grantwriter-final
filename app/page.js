@@ -2,8 +2,8 @@
 // 我们需要从 react 引入 useEffect 和 useState
 import { useState, useEffect } from 'react';
 
-// 在这里定义我们的免费使用上限
-const USAGE_LIMIT = 2;
+// 【唯一的修改在这里】我们将免费使用上限设置为 3 次
+const USAGE_LIMIT = 3;
 
 export default function Home() {
   const [topic, setTopic] = useState('');
@@ -14,10 +14,10 @@ export default function Home() {
   const [result, setResult] = useState('');
   const [error, setError] = useState('');
 
-  // 【新功能1】创建一个状态来追踪用户的使用次数
+  // 创建一个状态来追踪用户的使用次数
   const [usageCount, setUsageCount] = useState(0);
 
-  // 【新功能2】当页面第一次加载时，从浏览器的小“笔记本”里读取记录
+  // 当页面第一次加载时，从浏览器的小“笔记本”里读取记录
   useEffect(() => {
     // 尝试读取名为 'proposalUsageCount' 的记录，如果找不到，就默认为 0
     const storedCount = parseInt(localStorage.getItem('proposalUsageCount') || '0');
@@ -27,7 +27,7 @@ export default function Home() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // 【新功能3】在执行任何操作之前，先检查使用次数
+    // 在执行任何操作之前，先检查使用次数
     if (usageCount >= USAGE_LIMIT) {
       // 如果次数已经用完，就弹出一个提示，然后停止所有后续操作
       alert("您已用完 " + USAGE_LIMIT + " 次免费试用机会！未来的付费版将解锁无限次使用和更多高级功能。");
@@ -38,7 +38,7 @@ export default function Home() {
     setResult('');
     setError('');
 
-    // 【新功能4】一旦用户点击生成，立刻将使用次数 +1 并记录下来
+    // 一旦用户点击生成，立刻将使用次数 +1 并记录下来
     const newCount = usageCount + 1;
     localStorage.setItem('proposalUsageCount', newCount.toString());
     setUsageCount(newCount); // 更新页面上的次数记录
@@ -101,7 +101,7 @@ export default function Home() {
           </div>
           <div>
             <label style={styles.label} htmlFor="hypothesis">Central Hypothesis</label>
-            <textarea style={styles.textarea} id="hypothesis" value={hypothesis} onChange={(e) => setHypothesis(e.target.value)} placeholder="e.g., We hypothesize that protein XYZ is a key driver of..." required rows="3"></textarea>
+            <textarea style={styles.textarea} id="hypothesis" value={hypothesis} onChange={(e) => setHypothesis(e.g., We hypothesize that protein XYZ is a key driver of..." required rows="3"></textarea>
           </div>
           <div>
             <label style={styles.label} htmlFor="aim1">Specific Aim 1</label>
@@ -115,7 +115,7 @@ export default function Home() {
             {isLoading ? 'Generating...' : '✨ Generate Proposal'}
           </button>
         </form>
-        {/* 【新功能5】在底部显示剩余次数 */}
+        {/* 在底部显示剩余次数 */}
         <p style={styles.footerText}>You have {remainingTries} free tries remaining.</p>
       </div>
       <div style={styles.rightPanel}>
